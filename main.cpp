@@ -1,0 +1,221 @@
+/**
+ * @file main.cpp
+ * @brief Ponto de entrada da aplicação Visualizador DICOM.
+ * @details Este arquivo configura a interface gráfica principal, gerencia a navegação entre telas
+ * (Boas-vindas e Visualizador) e inicializa os codecs de descompressão DICOM necessários.
+ * @author Marco Antonio (Saturnino.eng)
+ * @version 1.0
+ */
+
+#include <QApplication>
+#include <QMainWindow>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QStackedWidget>
+#include <QLabel>
+#include <QScreen>
+#include <QStyle> // Para centralizar a janela no monitor
+#include <QDesktopWidget> // Para pegar o tamanho da tela
+
+// Includes do componente de visualização gráfica
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
+
+// Includes dos Codecs de descompressão da DCMTK
+#include "dcmtk/dcmjpeg/djdecode.h"  // JPEG Padrão
+#include "dcmtk/dcmjpls/djdecode.h"  // JPEG-LS (Mamografias)
+#include "dcmtk/dcmdata/dcrledrg.h"  // RLE (Run Length Encoding)
+
+// Gerenciador personalizado
+#include "DicomManager.h"
+
+/**
+ * @brief Função principal da aplicação.
+ * * Responsável por:
+ * 1. Registrar os decodificadores globais da DCMTK.
+ * 2. Construir a interface gráfica (Janela, Stack de telas, Botões).
+ * 3. Conectar a lógica de interação (Sinais e Slots).
+ * 4. Executar o loop de eventos do Qt.
+ * * @param argc Número de argumentos de linha de comando.
+ * @param argv Vetor de argumentos de linha de comando.
+ * @return int Código de saída da aplicação (0 para sucesso).
+ */
+int main(int argc, char *argv[]) {
+    // --- 1. Registro de Codecs (Essencial para abrir imagens comprimidas - Padrão) ---
+    DJDecoderRegistration::registerCodecs();     // Suporte a JPEG
+    DJLSDecoderRegistration::registerCodecs();   // Suporte a JPEG-LS
+    DcmRLEDecoderRegistration::registerCodecs(); // Suporte a RLE
+    
+    QApplication app(argc, argv);
+
+    // Configuração da Janela Principal
+    QMainWindow window;
+    window.setWindowTitle("Saturnino.eng View - Versão 1.0");
+    window.resize(1024, 768);
+
+    // Centraliza a janela no monitor do usuário ao abrir
+    window.setGeometry(
+        QStyle::alignedRect(
+            Qt::LeftToRight,
+            Qt::AlignCenter,
+            window.size(),
+            QGuiApplication::primaryScreen()->availableGeometry()
+        )
+    );
+
+    // QStackedWidget permite alternar entre a "Tela Inicial" e o "Visualizador"
+    QStackedWidget *stackedWidget = new QStackedWidget;
+    window.setCentralWidget(stackedWidget);
+
+    // =========================================================
+    // TELA 1: Boas-vindas (Welcome Screen)
+    // =========================================================
+    QWidget *welcomePage = new QWidget;
+    QVBoxLayout *welcomeLayout = new QVBoxLayout(welcomePage);
+    
+    // Centralizar verticalmente o conteúdo
+    welcomeLayout->addStretch(); 
+
+    // Logo (Estilizado via CSS)
+    QLabel *logoLabel = new QLabel("Saturnino.eng View");
+    logoLabel->setStyleSheet("font-size: 48px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;");
+    welcomeLayout->addWidget(logoLabel, 0, Qt::AlignCenter);
+
+    // Subtítulo
+    QLabel *subTitle = new QLabel("Visualizador DICOM de Alta Performance");
+    subTitle->setStyleSheet("font-size: 18px; color: #7f8c8d;");
+    welcomeLayout->addWidget(subTitle, 0, Qt::AlignCenter);
+
+    welcomeLayout->addSpacing(40);
+
+    // Botão Principal "Abrir Arquivo"
+    QPushButton *btnBigOpen = new QPushButton("📂 Abrir Arquivo DICOM");
+    btnBigOpen->setCursor(Qt::PointingHandCursor);
+    btnBigOpen->setFixedSize(300, 60); 
+    btnBigOpen->setStyleSheet(
+        "QPushButton { "
+        "  background-color: #3498db; color: white; border-radius: 8px; font-size: 18px; font-weight: bold;"
+        "}"
+        "QPushButton:hover { background-color: #2980b9; }"
+    );
+    
+    welcomeLayout->addWidget(btnBigOpen, 0, Qt::AlignCenter);
+    welcomeLayout->addStretch(); 
+
+    // =========================================================
+    // TELA 2: Visualizador (Viewer Screen)
+    // =========================================================
+    QWidget *viewerPage = new QWidget;
+    QVBoxLayout *viewerLayout = new QVBoxLayout(viewerPage);
+
+    // Configuração do Graphics View Framework (Para Zoom e Pan eficientes)
+    QGraphicsScene *scene = new QGraphicsScene();
+    QGraphicsView *view = new QGraphicsView(scene);
+    view->setDragMode(QGraphicsView::ScrollHandDrag); // Permite arrastar com o mouse
+    view->setBackgroundBrush(Qt::black);              // Fundo padrão radiológico
+    view->setStyleSheet("border: none;"); 
+    viewerLayout->addWidget(view);
+
+    // Barra de Ferramentas Inferior
+    QHBoxLayout *toolsLayout = new QHBoxLayout();
+    
+    QPushButton *btnOpenAnother = new QPushButton("Abrir Outro");
+    QPushButton *btnZoomIn = new QPushButton("Zoom (+)");
+    QPushButton *btnZoomOut = new QPushButton("Zoom (-)");
+    QPushButton *btnFit = new QPushButton("Resetar");
+    QPushButton *btnBack = new QPushButton("Voltar ao Início");
+
+    // Estilização dos botões da barra
+    QString toolBtnStyle = "padding: 8px 15px; font-weight: bold; border-radius: 4px; background-color: #ecf0f1;";
+    btnOpenAnother->setStyleSheet(toolBtnStyle);
+    btnZoomIn->setStyleSheet(toolBtnStyle);
+    btnZoomOut->setStyleSheet(toolBtnStyle);
+    btnFit->setStyleSheet(toolBtnStyle);
+    btnBack->setStyleSheet("padding: 8px 15px; color: white; background-color: #e74c3c; border-radius: 4px;");
+
+    toolsLayout->addWidget(btnOpenAnother);
+    toolsLayout->addStretch(); // Espaçador
+    toolsLayout->addWidget(btnZoomIn);
+    toolsLayout->addWidget(btnZoomOut);
+    toolsLayout->addWidget(btnFit);
+    toolsLayout->addWidget(btnBack);
+    
+    viewerLayout->addLayout(toolsLayout);
+
+    // Adiciona as páginas ao Stack
+    stackedWidget->addWidget(welcomePage); // Índice 0
+    stackedWidget->addWidget(viewerPage);  // Índice 1
+    stackedWidget->setCurrentIndex(0);     // Inicia na tela de boas-vindas
+
+    // =========================================================
+    // LÓGICA E CONEXÕES (Signals & Slots)
+    // =========================================================
+
+    // Lambda para abrir arquivo (utilizada pelos dois botões de abrir)
+    auto openDicomAction = [&window, stackedWidget, scene, view]() {
+        
+        //Tenta abrir na pasta "ArquivosDesafio"
+        QString initialDir = QCoreApplication::applicationDirPath() + "/../ArquivosDesafio";
+
+        // Se a pasta "ArquivosDesafio" não existir, tenta apenas a raiz do projeto
+        if (!QDir(initialDir).exists()) {
+             initialDir = QCoreApplication::applicationDirPath() + "/..";
+        }
+
+        QString path = QFileDialog::getOpenFileName(
+            &window, 
+            "Abrir DICOM", 
+            initialDir, 
+            "DICOM Files (*.dcm)"
+        );
+
+        if (!path.isEmpty()) {
+            // Chama o DicomManager para processar o arquivo
+            QImage img = DicomManager::loadDicomImage(path);
+            
+            if (!img.isNull()) {
+                scene->clear(); // Limpa imagem anterior
+                QGraphicsPixmapItem *item = scene->addPixmap(QPixmap::fromImage(img));
+                view->fitInView(item, Qt::KeepAspectRatio); // Ajusta zoom inicial
+                stackedWidget->setCurrentIndex(1); // Muda para a tela do visualizador
+            } else {
+                QMessageBox::critical(&window, "Erro", "Falha ao processar imagem.\nVerifique se o arquivo é um DICOM válido.");
+            }
+        }
+    };
+
+    // Conexões dos Botões
+    QObject::connect(btnBigOpen, &QPushButton::clicked, openDicomAction);
+    QObject::connect(btnOpenAnother, &QPushButton::clicked, openDicomAction);
+    
+    // Controles de Zoom
+    QObject::connect(btnZoomIn, &QPushButton::clicked, [view]() { view->scale(1.25, 1.25); });
+    QObject::connect(btnZoomOut, &QPushButton::clicked, [view]() { view->scale(0.8, 0.8); });
+    
+    // Resetar visualização (Fit to Screen)
+    QObject::connect(btnFit, &QPushButton::clicked, [scene, view]() { 
+        view->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio); 
+    });
+    
+    // Voltar para a Home
+    QObject::connect(btnBack, &QPushButton::clicked, [stackedWidget, scene]() {
+        scene->clear(); // Libera memória da imagem atual
+        stackedWidget->setCurrentIndex(0);
+    });
+
+    window.show();
+
+    // Executa a aplicação
+    int result = app.exec();
+    
+    // Limpeza dos Codecs ao encerrar
+    DJDecoderRegistration::cleanup();
+    DJLSDecoderRegistration::cleanup();
+    DcmRLEDecoderRegistration::cleanup();
+    
+    return result;
+}
