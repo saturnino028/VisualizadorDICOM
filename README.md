@@ -140,15 +140,6 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
 
 ### 🔹 Versão 1.3 – Melhorias na Visualização de Imagens
 
-* [ ] **Window Level / Width manual**
-
-  * Ajuste interativo via mouse (drag horizontal/vertical)
-* [ ] **Suporte a imagens 16-bit**
-
-  * Renderização correta para modalidades de maior profundidade de bits
-* [ ] **Reset automático de visualização**
-
-  * Reajuste da imagem ao trocar de arquivo
 * [ ] **Indicadores visuais**
 
   * Escala de cinza
@@ -157,9 +148,6 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
 * [ ] **Exportação de imagem**
 
   * PNG / JPEG com janelamento aplicado
-* [ ] **Arquitetura mais modular**
-
-  * Separação clara entre UI, processamento DICOM e renderização
 
 ---
 
