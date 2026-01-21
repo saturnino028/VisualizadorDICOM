@@ -102,6 +102,7 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
 
 * [ ] **Redesign da interface principal**
 
+  *Visualização de Metadados
   * Layout mais profissional e alinhado a visualizadores médicos comerciais
   * Melhor organização dos painéis e menus
 * [ ] **Tema escuro (Dark Mode)**
