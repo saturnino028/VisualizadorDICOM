@@ -20,8 +20,9 @@
 #include <QApplication>     // Gerencia o fluxo da aplicação e configurações globais
 #include <QGraphicsView>    // O "visualizador" da imagem (permite zoom/pan)
 #include <QStackedWidget>   // Gerencia as "páginas" (Tela Inicial vs Visualizador)
-#include <QGuiApplication>  // Classe base para aplicações com GUI
 #include <QGraphicsScene>   // A "cena" onde a imagem é desenhada dentro do View
+#include <QProgressDialog> // Para a janela de "Aguarde"
+#include <QGuiApplication>  // Classe base para aplicações com GUI
 #include <QGraphicsPixmapItem> // O item que contém a imagem
 
 // Includes dos Codecs de descompressão da DCMTK
@@ -174,13 +175,10 @@ int main(int argc, char *argv[]) {
     // LÓGICA E CONEXÕES (Signals & Slots)
     // =========================================================
 
-    // Lambda para abrir arquivo (utilizada pelos dois botões de abrir)
+// Lambda para abrir arquivo
     auto openDicomAction = [&window, stackedWidget, scene, view]() {
         
-        //Tenta abrir na pasta "ArquivosDesafio"
         QString initialDir = QCoreApplication::applicationDirPath() + "/../ArquivosDesafio";
-
-        // Se a pasta "ArquivosDesafio" não existir, tenta apenas a raiz do projeto
         if (!QDir(initialDir).exists()) {
              initialDir = QCoreApplication::applicationDirPath() + "/..";
         }
@@ -189,38 +187,50 @@ int main(int argc, char *argv[]) {
             &window, 
             "Abrir DICOM", 
             initialDir, 
-            "DICOM Files (*.dcm);;Todos os Arquivos (*)"
+            "Arquivos DICOM (*.dcm);;Todos os Arquivos (*)"
         );
 
         if (!path.isEmpty()) {
-            // Chama o DicomManager para processar o arquivo
+            
+            // --- [1] INDICADOR VISUAL DE CARREGAMENTO ---
+            
+            // Muda o cursor do mouse para uma "ampulheta" ou "círculo girando"
+            QApplication::setOverrideCursor(Qt::WaitCursor);
+
+            // Cria uma janela modal de progresso
+            QProgressDialog progress("Processando imagem DICOM...\nIsso pode levar alguns segundos.", nullptr, 0, 0, &window);
+            progress.setWindowTitle("Aguarde");
+            progress.setWindowModality(Qt::WindowModal); // Bloqueia cliques na janela principal
+            progress.setCancelButton(nullptr); // Não tem botão de cancelar
+            progress.setMinimumDuration(0); // Força aparecer imediatamente
+            progress.show();
+
+            // Como o próximo comando (DicomManager) vai travar a interface,
+            // chamamos processEvents para obrigar o Qt a desenhar a janela de progresso AGORA.
+            QCoreApplication::processEvents(); 
+
+            // --- [2] O TRABALHO PESADO ---
             QImage img = DicomManager::loadDicomImage(path);
             
+            // --- [3] REMOVE O INDICADOR ---
+            progress.close(); // Fecha a janelinha
+            QApplication::restoreOverrideCursor(); // O mouse volta ao normal
+
             if (!img.isNull()) {
                 scene->clear(); 
-                
-                // 1. Define a "Mesa Infinita" para melhor visualização
-                scene->setSceneRect(-10000, -10000, 20000, 20000);
+                scene->setSceneRect(-10000, -10000, 20000, 20000); // Mesa infinita
 
-                // 2. Adiciona a imagem
                 QGraphicsPixmapItem *item = scene->addPixmap(QPixmap::fromImage(img));
-                
-                // 3. Define o ponto de origem da imagem
                 item->setOffset(-img.width() / 2.0, -img.height() / 2.0);
 
-                // 4. Ajusta o Zoom para a imagem caber na tela
                 view->fitInView(item, Qt::KeepAspectRatio);
-                
-                // 5. Recua um pouco (95%) para dar uma margem estética
                 view->scale(0.95, 0.95); 
-
-                // Força a câmera a olhar exatamente para o centro (0,0)
-                // Como definimos o offset da imagem acima, (0,0) é o centro da imagem.
                 view->centerOn(0, 0);
 
                 stackedWidget->setCurrentIndex(1); 
             } else {
-                QMessageBox::critical(&window, "Erro", "Falha ao processar imagem.\nVerifique se o arquivo é um DICOM válido.");
+                QMessageBox::critical(&window, "Erro no Arquivo", 
+                    "Não foi possível carregar a imagem.\nVerifique se é um arquivo DICOM válido.");
             }
         }
     };
@@ -265,7 +275,7 @@ int main(int argc, char *argv[]) {
     QShortcut *shortcutReset = new QShortcut(QKeySequence("Ctrl+0"), &window);
     QObject::connect(shortcutReset, &QShortcut::activated, [scene, view]() {
         view->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
-        view->centerOn(0,0); // Centraliza
+        view->centerOn(0,0); // Centraliza a imagem após o reset
     });
 
     window.show();
