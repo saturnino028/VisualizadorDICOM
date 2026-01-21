@@ -10,6 +10,7 @@
 #include <QLabel>           // Para exibir textos (ex: "Saturnino.eng View")
 #include <QScreen>          // Para obter informações sobre o monitor
 #include <QStyle>           // Para acessar estilos e geometria do sistema
+#include <QShortcut>        // Criar atalhos de teclado
 #include <QMainWindow>      // A janela principal da aplicação
 #include <QPushButton>      // Botões clicáveis
 #include <QVBoxLayout>      // Organiza widgets verticalmente (um em cima do outro)
@@ -241,6 +242,30 @@ int main(int argc, char *argv[]) {
     QObject::connect(btnBack, &QPushButton::clicked, [stackedWidget, scene]() {
         scene->clear(); // Libera memória da imagem atual
         stackedWidget->setCurrentIndex(0);
+    });
+
+    // --- ATALHOS DE TECLADO (SHORTCUTS) ---
+    // 1. Atalho para Abrir Arquivo (Ctrl + O)
+    QShortcut *shortcutOpen = new QShortcut(QKeySequence("Ctrl+O"), &window);
+    QObject::connect(shortcutOpen, &QShortcut::activated, openDicomAction);
+
+    // 2. Atalho para Zoom In (Ctrl + +)
+    QShortcut *shortcutZoomIn = new QShortcut(QKeySequence::ZoomIn, &window);
+    QObject::connect(shortcutZoomIn, &QShortcut::activated, [view]() {
+        view->scale(1.20, 1.20);
+    });
+
+    // 3. Atalho para Zoom Out (Ctrl + -)
+    QShortcut *shortcutZoomOut = new QShortcut(QKeySequence::ZoomOut, &window);
+    QObject::connect(shortcutZoomOut, &QShortcut::activated, [view]() {
+        view->scale(0.8, 0.8);
+    });
+    
+    // 4. Atalho para Resetar Zoom (Ctrl + 0)
+    QShortcut *shortcutReset = new QShortcut(QKeySequence("Ctrl+0"), &window);
+    QObject::connect(shortcutReset, &QShortcut::activated, [scene, view]() {
+        view->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
+        view->centerOn(0,0); // Centraliza
     });
 
     window.show();
