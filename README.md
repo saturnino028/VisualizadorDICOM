@@ -118,13 +118,6 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
 
 ### 🔹 Versão 1.2 – Visualização de Metadados DICOM
 
-* [ ] **Painel dedicado de metadados**
-
-  * Exibição em árvore (Tag → Nome → Valor)
-  * Organização por grupos DICOM (Patient, Study, Series, Image)
-* [ ] **Busca por tags**
-
-  * Filtro por nome da tag ou ID (ex.: `(0010,0010)`)
 * [ ] **Exibição de informações essenciais**
 
   * Nome do paciente
@@ -132,18 +125,6 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
   * Data do exame
   * Resolução da imagem
   * Window Level / Window Width
-* [ ] **Formatação segura de dados sensíveis**
-
-  * Opção para ocultar/anônimizar dados do paciente (Patient Privacy Mode)
-
----
-
-### 🔹 Versão 1.3 – Melhorias na Visualização de Imagens
-
-* [ ] **Indicadores visuais**
-
-  * Escala de cinza
-  * Dimensões da imagem (pixels)
     
 * [ ] **Exportação de imagem**
 
