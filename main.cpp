@@ -7,31 +7,29 @@
  * @version 1.0
  */
 
-#include <QApplication>
-#include <QMainWindow>
-#include <QPushButton>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QStackedWidget>
-#include <QLabel>
-#include <QScreen>
-#include <QStyle> // Para centralizar a janela no monitor
-#include <QDesktopWidget> // Para pegar o tamanho da tela
-
-// Includes do componente de visualização gráfica
-#include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QGraphicsPixmapItem>
+#include <QLabel>           // Para exibir textos (ex: "Saturnino.eng View")
+#include <QScreen>          // Para obter informações sobre o monitor
+#include <QStyle>           // Para acessar estilos e geometria do sistema
+#include <QMainWindow>      // A janela principal da aplicação
+#include <QPushButton>      // Botões clicáveis
+#include <QVBoxLayout>      // Organiza widgets verticalmente (um em cima do outro)
+#include <QHBoxLayout>      // Organiza widgets horizontalmente (um ao lado do outro)
+#include <QFileDialog>      // A janela de "Abrir Arquivo" do sistema operacional
+#include <QMessageBox>      // Janelas de alerta (Pop-ups de erro)
+#include <QApplication>     // Gerencia o fluxo da aplicação e configurações globais
+#include <QGraphicsView>    // O "visualizador" da imagem (permite zoom/pan)
+#include <QStackedWidget>   // Gerencia as "páginas" (Tela Inicial vs Visualizador)
+#include <QGuiApplication>  // Classe base para aplicações com GUI
+#include <QGraphicsScene>   // A "cena" onde a imagem é desenhada dentro do View
+#include <QGraphicsPixmapItem> // O item que contém a imagem
 
 // Includes dos Codecs de descompressão da DCMTK
-#include "dcmtk/dcmjpeg/djdecode.h"  // JPEG Padrão
-#include "dcmtk/dcmjpls/djdecode.h"  // JPEG-LS (Mamografias)
-#include "dcmtk/dcmdata/dcrledrg.h"  // RLE (Run Length Encoding)
+#include "dcmtk/dcmjpeg/djdecode.h"  // Permite abrir DICOM comprimido em JPEG
+#include "dcmtk/dcmjpls/djdecode.h"  // Permite abrir JPEG-LS (muito usado em Mamografia)
+#include "dcmtk/dcmdata/dcrledrg.h"  // Permite abrir compressão RLE
 
 // Gerenciador personalizado
-#include "DicomManager.h"
+#include "DicomManager.h" // Classe que faz a ponte entre o arquivo .dcm e o Qt
 
 /**
  * @brief Função principal da aplicação.
@@ -50,14 +48,31 @@ int main(int argc, char *argv[]) {
     DJLSDecoderRegistration::registerCodecs();   // Suporte a JPEG-LS
     DcmRLEDecoderRegistration::registerCodecs(); // Suporte a RLE
     
-    QApplication app(argc, argv);
+    QApplication app(argc, argv); //Prepara o ambiente gráfico
 
     // Configuração da Janela Principal
     QMainWindow window;
-    window.setWindowTitle("Saturnino.eng View - Versão 1.0");
-    window.resize(1024, 768);
+    window.setWindowTitle("Saturnino.eng View - Versão 1.0.1");
+    
+    // 1. Pega a tela onde o mouse/app está (Tela Primária)
+    QScreen *screen = QGuiApplication::primaryScreen();
+    
+    // 2. Pega a geometria disponível (Tamanho total - Barra de Tarefas)
+    QRect screenGeometry = screen->availableGeometry();
+    
+    // 3. Define um tamanho padrão de 80% da tela (ótimo para "Restaurar")
+    int width = screenGeometry.width();
+    int height = screenGeometry.height();
+    
+    // 4. Centraliza esse retângulo na tela
+    int x = (screenGeometry.width() - width) / 2;
+    int y = (screenGeometry.height() - height) / 2;
+    
+    // Aplica o tamanho calculado para quando a janela não estiver maximizada
+    window.setGeometry(x, y, width, height);
 
     // Centraliza a janela no monitor do usuário ao abrir
+    /*
     window.setGeometry(
         QStyle::alignedRect(
             Qt::LeftToRight,
@@ -66,6 +81,9 @@ int main(int argc, char *argv[]) {
             QGuiApplication::primaryScreen()->availableGeometry()
         )
     );
+    */
+   
+    window.setWindowFlags(Qt::Window);
 
     // QStackedWidget permite alternar entre a "Tela Inicial" e o "Visualizador"
     QStackedWidget *stackedWidget = new QStackedWidget;
