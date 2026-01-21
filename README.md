@@ -101,10 +101,10 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
 ### 🔹 Versão 1.1 – Interface do Usuário (UI/UX)
 
 * [ ] **Redesign da interface principal**
-
-  *Visualização de Metadados
   * Layout mais profissional e alinhado a visualizadores médicos comerciais
   * Melhor organização dos painéis e menus
+  * Visualização de metadados
+  * Correção de bugs
 * [ ] **Tema escuro (Dark Mode)**
 
   * Alternância entre tema claro e escuro
