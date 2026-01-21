@@ -4,7 +4,7 @@
  * @details Este arquivo configura a interface gráfica principal, gerencia a navegação entre telas
  * (Boas-vindas e Visualizador) e inicializa os codecs de descompressão DICOM necessários.
  * @author Marco Antonio (Saturnino.eng)
- * @version 1.0
+ * @version 1.0.1
  */
 
 #include <QLabel>           // Para exibir textos (ex: "Saturnino.eng View")
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     // 2. Pega a geometria disponível (Tamanho total - Barra de Tarefas)
     QRect screenGeometry = screen->availableGeometry();
     
-    // 3. Define um tamanho padrão de 80% da tela (ótimo para "Restaurar")
+    // 3. Define um tamanho padrão
     int width = screenGeometry.width();
     int height = screenGeometry.height();
     
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
             &window, 
             "Abrir DICOM", 
             initialDir, 
-            "DICOM Files (*.dcm)"
+            "DICOM Files (*.dcm);;Todos os Arquivos (*)"
         );
 
         if (!path.isEmpty()) {
@@ -196,10 +196,28 @@ int main(int argc, char *argv[]) {
             QImage img = DicomManager::loadDicomImage(path);
             
             if (!img.isNull()) {
-                scene->clear(); // Limpa imagem anterior
+                scene->clear(); 
+                
+                // 1. Define a "Mesa Infinita" para melhor visualização
+                scene->setSceneRect(-10000, -10000, 20000, 20000);
+
+                // 2. Adiciona a imagem
                 QGraphicsPixmapItem *item = scene->addPixmap(QPixmap::fromImage(img));
-                view->fitInView(item, Qt::KeepAspectRatio); // Ajusta zoom inicial
-                stackedWidget->setCurrentIndex(1); // Muda para a tela do visualizador
+                
+                // 3. Define o ponto de origem da imagem
+                item->setOffset(-img.width() / 2.0, -img.height() / 2.0);
+
+                // 4. Ajusta o Zoom para a imagem caber na tela
+                view->fitInView(item, Qt::KeepAspectRatio);
+                
+                // 5. Recua um pouco (95%) para dar uma margem estética
+                view->scale(0.95, 0.95); 
+
+                // Força a câmera a olhar exatamente para o centro (0,0)
+                // Como definimos o offset da imagem acima, (0,0) é o centro da imagem.
+                view->centerOn(0, 0);
+
+                stackedWidget->setCurrentIndex(1); 
             } else {
                 QMessageBox::critical(&window, "Erro", "Falha ao processar imagem.\nVerifique se o arquivo é um DICOM válido.");
             }
