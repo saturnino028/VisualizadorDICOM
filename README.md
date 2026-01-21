@@ -104,13 +104,7 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
   * Layout mais profissional e alinhado a visualizadores médicos comerciais
   * Melhor organização dos painéis e menus
   * Correção de bugs
-* [ ] **Tema escuro (Dark Mode)**
-
-  * Alternância entre tema claro e escuro
-  * Melhor conforto visual em ambientes clínicos
-* [ ] **Barra de ferramentas contextual**
-
-  * Ações rápidas: zoom, reset de view, abrir arquivo, informações do exame
+     
 * [ ] **Atalhos de teclado**
 
   * Zoom (`Ctrl + / Ctrl -`)
@@ -119,7 +113,6 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
 * [ ] **Feedback visual aprimorado**
 
   * Indicadores de carregamento
-  * Mensagens de erro mais descritivas e amigáveis
 
 ---
 
