@@ -4,7 +4,7 @@
  * @details Este arquivo contém a lógica de integração entre a biblioteca DCMTK (backend)
  * e o framework Qt (frontend), gerenciando a conversão de dados brutos para visualização.
  * @author Marco Antonio (Saturnino.eng)
- * @version 1.0
+ * @version 1.2.0
  */
 
 #include "DicomManager.h"
@@ -14,7 +14,12 @@
 #include <dcmtk/config/osconfig.h> 
 #include <dcmtk/dcmimgle/dcmimage.h>
 
-#include <QDebug> 
+// Includes para leitura de Tags (Metadados)
+#include <dcmtk/dcmdata/dctk.h>      // Acesso genérico
+#include <dcmtk/dcmdata/dcfilefo.h>  // Manipulação de arquivo DICOM
+#include <dcmtk/dcmdata/dcdeftag.h>  // Definições das Tags (DCM_PatientName...)
+
+#include <QDebug>
 
 /**
  * @brief Carrega um arquivo DICOM do disco e o converte para QImage.
@@ -68,4 +73,57 @@ QImage DicomManager::loadDicomImage(const QString &path) {
     // Limpeza em caso de falha na extração dos pixels
     delete image;
     return QImage();
+}
+
+/**
+ * @brief Extrai metadados textuais do arquivo DICOM (Overlay).
+ * @details Utiliza DcmFileFormat para ler apenas o Header do arquivo.
+ * Realiza conversão de encoding (Latin1) para suportar acentuação e formata a data.
+ * @param path O caminho absoluto ou relativo para o arquivo .dcm.
+ * @return DicomMetadata Estrutura preenchida. Se falhar, retorna isValid = false.
+ */
+DicomMetadata DicomManager::extractMetadata(const QString &path) {
+    DicomMetadata data;
+    DcmFileFormat fileformat;
+
+    // Carrega apenas a estrutura de dados (Header), sem carregar pixels (rápido)
+    if (fileformat.loadFile(path.toStdString().c_str()).good()) {
+        DcmDataset *dataset = fileformat.getDataset();
+        OFString tempVal;
+
+        // Lambda auxiliar para buscar tags com segurança e converter encoding
+        auto getTag = [&](const DcmTagKey &tag) -> QString {
+            if (dataset->findAndGetOFString(tag, tempVal).good()) {
+                return QString::fromLatin1(tempVal.c_str());
+            }
+            return "N/A";
+        };
+
+        // Extração das Tags
+        data.patientName = getTag(DCM_PatientName);
+        data.patientID   = getTag(DCM_PatientID);
+        data.studyDate   = getTag(DCM_StudyDate);
+        data.modality    = getTag(DCM_Modality);
+        data.institution = getTag(DCM_InstitutionName);
+
+        // Formatação de Data (DICOM usa YYYYMMDD -> DD/MM/YYYY)
+        if (data.studyDate.length() == 8) {
+            data.studyDate = data.studyDate.mid(6, 2) + "/" + 
+                             data.studyDate.mid(4, 2) + "/" + 
+                             data.studyDate.left(4);
+        }
+
+        // Extração de Dimensões (Números inteiros)
+        long cols = 0, rows = 0;
+        dataset->findAndGetLongInt(DCM_Columns, cols);
+        dataset->findAndGetLongInt(DCM_Rows, rows);
+        data.dimensions = QString("%1 x %2 px").arg(cols).arg(rows);
+
+        data.isValid = true;
+    } else {
+        qDebug() << "Erro ao ler metadados do arquivo:" << path;
+        data.isValid = false;
+    }
+
+    return data;
 }

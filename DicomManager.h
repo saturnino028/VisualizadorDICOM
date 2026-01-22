@@ -4,7 +4,7 @@
  * @details Este arquivo define a interface para manipulação de arquivos DICOM,
  * servindo como uma camada de abstração (wrapper) simplificada para a biblioteca DCMTK.
  * @author Marco Antonio (Saturnino.eng)
- * @version 1.0
+ * @version 1.2.0
  */
 
 #ifndef DICOMMANAGER_H
@@ -12,6 +12,21 @@
 
 #include <QString>
 #include <QImage>
+
+/**
+ * @struct DicomMetadata
+ * @brief Estrutura de dados para armazenar metadados essenciais extraídos do arquivo DICOM.
+ * @details Esta estrutura agrupa informações do paciente e do exame para exibição em overlay.
+ */
+struct DicomMetadata {
+    QString patientName;  ///< Nome do Paciente (Tag 0010,0010)
+    QString patientID;    ///< ID do Paciente (Tag 0010,0020)
+    QString studyDate;    ///< Data do Estudo (Tag 0008,0020)
+    QString modality;     ///< Modalidade (CT, MR, CR, etc) (Tag 0008,0060)
+    QString institution;  ///< Nome da Instituição (Tag 0008,0080)
+    QString dimensions;   ///< Dimensões da imagem (Colunas x Linhas)
+    bool isValid = false; ///< Flag para indicar se a extração foi bem-sucedida
+};
 
 /**
  * @class DicomManager
@@ -34,6 +49,15 @@ public:
      * Retorna uma imagem nula (QImage::isNull()) se o arquivo for inválido ou corrompido.
      */
     static QImage loadDicomImage(const QString &path);
+
+    /**
+     * @brief Extrai metadados textuais do arquivo DICOM (Overlay).
+     * * Lê o cabeçalho do arquivo DICOM sem processar os pixels da imagem,
+     * tornando a operação extremamente rápida.
+     * * @param path O caminho completo para o arquivo .dcm.
+     * @return DicomMetadata Estrutura contendo as tags principais (Nome, Data, etc).
+     */
+    static DicomMetadata extractMetadata(const QString &path);
 };
 
 #endif // DICOMMANAGER_H

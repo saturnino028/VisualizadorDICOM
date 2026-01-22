@@ -4,7 +4,7 @@
  * @details Este arquivo configura a interface gráfica principal, gerencia a navegação entre telas
  * (Boas-vindas e Visualizador) e inicializa os codecs de descompressão DICOM necessários.
  * @author Marco Antonio (Saturnino.eng)
- * @version 1.0.1
+ * @version 1.2.0
  */
 
 #include <QLabel>           // Para exibir textos (ex: "Saturnino.eng View")
@@ -31,7 +31,7 @@
 #include "dcmtk/dcmdata/dcrledrg.h"  // Permite abrir compressão RLE
 
 // Gerenciador personalizado
-#include "DicomManager.h" // Classe que faz a ponte entre o arquivo .dcm e o Qt
+#include "DicomManager.h" // Classes que fazem a ponte entre o arquivo .dcm e o Qt
 
 /**
  * @brief Função principal da aplicação.
@@ -132,13 +132,49 @@ int main(int argc, char *argv[]) {
     QWidget *viewerPage = new QWidget;
     QVBoxLayout *viewerLayout = new QVBoxLayout(viewerPage);
 
-    // Configuração do Graphics View Framework (Para Zoom e Pan eficientes)
+    // Container para sobrepor Labels na GraphicsView
+    QWidget *viewContainer = new QWidget;
+    
+    // Grid Layout permite colocar widgets uns sobre os outros se usarmos as mesmas coordenadas
+    QGridLayout *overlayLayout = new QGridLayout(viewContainer);
+    overlayLayout->setContentsMargins(10, 10, 10, 10); // Margem interna de segurança
+
+    // 1. O Visualizador (Fica na camada de fundo)
     QGraphicsScene *scene = new QGraphicsScene();
     QGraphicsView *view = new QGraphicsView(scene);
-    view->setDragMode(QGraphicsView::ScrollHandDrag); // Permite arrastar com o mouse
-    view->setBackgroundBrush(Qt::black);              // Fundo padrão radiológico
+    view->setDragMode(QGraphicsView::ScrollHandDrag); 
+    view->setBackgroundBrush(Qt::black);              
     view->setStyleSheet("border: none;"); 
-    viewerLayout->addWidget(view);
+    
+    // O view ocupa tudo (Row 0, Col 0, RowSpan 3, ColSpan 2)
+    overlayLayout->addWidget(view, 0, 0, 3, 2); 
+
+    // 2. Configuração dos Labels de Overlay (Texto Amarelo/Médico)
+    QString overlayStyle = "QLabel { color: #f1c40f; font-weight: bold; font-size: 14px; background: transparent; }";
+
+    //3. Barra de Ferramentas e Botões
+    // Canto Superior Esquerdo (Info Paciente)
+    QLabel *lblTopLeft = new QLabel("");
+    lblTopLeft->setStyleSheet(overlayStyle);
+    lblTopLeft->setAttribute(Qt::WA_TransparentForMouseEvents); // Permite clicar na imagem "através" do texto
+    overlayLayout->addWidget(lblTopLeft, 0, 0, Qt::AlignTop | Qt::AlignLeft);
+
+    // Canto Superior Direito (Info Instituição/Data)
+    QLabel *lblTopRight = new QLabel("");
+    lblTopRight->setStyleSheet(overlayStyle);
+    lblTopRight->setAlignment(Qt::AlignRight);
+    lblTopRight->setAttribute(Qt::WA_TransparentForMouseEvents);
+    overlayLayout->addWidget(lblTopRight, 0, 1, Qt::AlignTop | Qt::AlignRight);
+
+    // Canto Inferior Direito (Info Técnica)
+    QLabel *lblBottomRight = new QLabel("");
+    lblBottomRight->setStyleSheet(overlayStyle);
+    lblBottomRight->setAlignment(Qt::AlignRight);
+    lblBottomRight->setAttribute(Qt::WA_TransparentForMouseEvents);
+    overlayLayout->addWidget(lblBottomRight, 2, 1, Qt::AlignBottom | Qt::AlignRight);
+    
+    // Adiciona o container montado à página
+    viewerLayout->addWidget(viewContainer);
 
     // Barra de Ferramentas Inferior
     QHBoxLayout *toolsLayout = new QHBoxLayout();
@@ -175,8 +211,8 @@ int main(int argc, char *argv[]) {
     // LÓGICA E CONEXÕES (Signals & Slots)
     // =========================================================
 
-// Lambda para abrir arquivo
-    auto openDicomAction = [&window, stackedWidget, scene, view]() {
+    // Lambda para abrir arquivo
+    auto openDicomAction = [&window, stackedWidget, scene, view, lblTopLeft, lblTopRight, lblBottomRight]() {
         
         QString initialDir = QCoreApplication::applicationDirPath() + "/../ArquivosDesafio";
         if (!QDir(initialDir).exists()) {
@@ -184,41 +220,30 @@ int main(int argc, char *argv[]) {
         }
 
         QString path = QFileDialog::getOpenFileName(
-            &window, 
-            "Abrir DICOM", 
-            initialDir, 
-            "Arquivos DICOM (*.dcm);;Todos os Arquivos (*)"
+            &window, "Abrir DICOM", initialDir, "Arquivos DICOM (*.dcm);;Todos os Arquivos (*)"
         );
 
         if (!path.isEmpty()) {
-            
-            // --- [1] INDICADOR VISUAL DE CARREGAMENTO ---
-            
-            // Muda o cursor do mouse para uma "ampulheta" ou "círculo girando"
+            // [1] Feedback Visual
             QApplication::setOverrideCursor(Qt::WaitCursor);
-
-            // Cria uma janela modal de progresso
-            QProgressDialog progress("Processando imagem DICOM...\nIsso pode levar alguns segundos.", nullptr, 0, 0, &window);
+            QProgressDialog progress("Processando imagem e metadados...", nullptr, 0, 0, &window);
             progress.setWindowTitle("Aguarde");
-            progress.setWindowModality(Qt::WindowModal); // Bloqueia cliques na janela principal
-            progress.setCancelButton(nullptr); // Não tem botão de cancelar
-            progress.setMinimumDuration(0); // Força aparecer imediatamente
+            progress.setWindowModality(Qt::WindowModal);
+            progress.setMinimumDuration(0);
             progress.show();
-
-            // Como o próximo comando (DicomManager) vai travar a interface,
-            // chamamos processEvents para obrigar o Qt a desenhar a janela de progresso AGORA.
             QCoreApplication::processEvents(); 
 
-            // --- [2] O TRABALHO PESADO ---
+            // [2] Trabalho Pesado (Carrega Imagem + Metadados)
             QImage img = DicomManager::loadDicomImage(path);
-            
-            // --- [3] REMOVE O INDICADOR ---
-            progress.close(); // Fecha a janelinha
-            QApplication::restoreOverrideCursor(); // O mouse volta ao normal
+            DicomMetadata meta = DicomManager::extractMetadata(path); // <--- NOVO
+
+            // [3] Remove Feedback
+            progress.close();
+            QApplication::restoreOverrideCursor();
 
             if (!img.isNull()) {
                 scene->clear(); 
-                scene->setSceneRect(-10000, -10000, 20000, 20000); // Mesa infinita
+                scene->setSceneRect(-10000, -10000, 20000, 20000); 
 
                 QGraphicsPixmapItem *item = scene->addPixmap(QPixmap::fromImage(img));
                 item->setOffset(-img.width() / 2.0, -img.height() / 2.0);
@@ -227,14 +252,31 @@ int main(int argc, char *argv[]) {
                 view->scale(0.95, 0.95); 
                 view->centerOn(0, 0);
 
+                // --- ATUALIZAÇÃO DO OVERLAY ---
+                if (meta.isValid) {
+                    lblTopLeft->setText(QString("NOME: %1\nID: %2\nMOD: %3")
+                                        .arg(meta.patientName)
+                                        .arg(meta.patientID)
+                                        .arg(meta.modality));
+
+                    lblTopRight->setText(QString("%1\nDATA: %2")
+                                         .arg(meta.institution)
+                                         .arg(meta.studyDate));
+
+                    lblBottomRight->setText(QString("DIM: %1").arg(meta.dimensions));
+                } else {
+                    lblTopLeft->setText("METADADOS INDISPONÍVEIS");
+                    lblTopRight->clear();
+                    lblBottomRight->clear();
+                }
+
                 stackedWidget->setCurrentIndex(1); 
             } else {
-                QMessageBox::critical(&window, "Erro no Arquivo", 
-                    "Não foi possível carregar a imagem.\nVerifique se é um arquivo DICOM válido.");
+                QMessageBox::critical(&window, "Erro", "Falha ao processar imagem DICOM.");
             }
         }
     };
-
+    
     // Conexões dos Botões
     QObject::connect(btnBigOpen, &QPushButton::clicked, openDicomAction);
     QObject::connect(btnOpenAnother, &QPushButton::clicked, openDicomAction);

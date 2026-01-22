@@ -11,7 +11,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Definição do Projeto e Versão
-project(VisualizadorDICOM VERSION 1.0 LANGUAGES CXX)
+project(VisualizadorDICOM VERSION 1.2.0 LANGUAGES CXX)
 
 # ------------------------------------------------------------------------------
 # Configurações do Compilador (C++17)
