@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
     QPushButton *btnZoomOut = new QPushButton("Zoom (-)");
     QPushButton *btnFit = new QPushButton("Resetar");
     QPushButton *btnBack = new QPushButton("Voltar ao Início");
-    QPushButton *btnToggleInfo = new QPushButton("Dados (On)");
+    QPushButton *btnToggleInfo = new QPushButton("Mostrar Metadados (On)");
 
     btnToggleInfo->setCheckable(true); // Transforma em botão de ligar/desligar
     btnToggleInfo->setChecked(true);   // Começa ligado (texto visível)
@@ -317,9 +317,9 @@ int main(int argc, char *argv[]) {
 
             // Muda o texto do botão para dar feedback ao usuário
             if (checked) {
-                btnToggleInfo->setText("Dados (On)");
+                btnToggleInfo->setText("Mostrar Metadados (On)");
             } else {
-                btnToggleInfo->setText("Dados (Off)");
+                btnToggleInfo->setText("Mostrar Metadados (Off)");
             }
         }
     );
