@@ -106,6 +106,9 @@ DicomMetadata DicomManager::extractMetadata(const QString &path) {
         data.modality    = getTag(DCM_Modality);
         data.institution = getTag(DCM_InstitutionName);
 
+        // Trocar o separador '^' por espaço ' ' para ficar legível
+        data.patientName.replace("^", " "); 
+
         // Formatação de Data (DICOM usa YYYYMMDD -> DD/MM/YYYY)
         if (data.studyDate.length() == 8) {
             data.studyDate = data.studyDate.mid(6, 2) + "/" + 

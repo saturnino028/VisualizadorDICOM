@@ -130,46 +130,55 @@ int main(int argc, char *argv[]) {
     // TELA 2: Visualizador (Viewer Screen)
     // =========================================================
     QWidget *viewerPage = new QWidget;
+    
+    // CORREÇÃO 1: Removemos as margens externas da página para o preto encostar na borda da janela
     QVBoxLayout *viewerLayout = new QVBoxLayout(viewerPage);
+    viewerLayout->setContentsMargins(0, 0, 0, 0); 
+    viewerLayout->setSpacing(0);
 
     // Container para sobrepor Labels na GraphicsView
     QWidget *viewContainer = new QWidget;
     
-    // Grid Layout permite colocar widgets uns sobre os outros se usarmos as mesmas coordenadas
     QGridLayout *overlayLayout = new QGridLayout(viewContainer);
-    overlayLayout->setContentsMargins(10, 10, 10, 10); // Margem interna de segurança
+    
+    int m = 10; // Margem interna para o texto não colar na borda da tela
+    overlayLayout->setContentsMargins(m, m, m, m); // Margem interna para o texto não colar na borda da tela
 
     // 1. O Visualizador (Fica na camada de fundo)
     QGraphicsScene *scene = new QGraphicsScene();
     QGraphicsView *view = new QGraphicsView(scene);
     view->setDragMode(QGraphicsView::ScrollHandDrag); 
     view->setBackgroundBrush(Qt::black);              
-    view->setStyleSheet("border: none;"); 
+    
+    // CORREÇÃO 2: Remove a borda e as barras de rolagem (Scrollbars)
+    // Isso impede que a barra branca apareça e corte o texto
+    view->setFrameShape(QFrame::NoFrame); 
+    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     
     // O view ocupa tudo (Row 0, Col 0, RowSpan 3, ColSpan 2)
     overlayLayout->addWidget(view, 0, 0, 3, 2); 
 
-    // 2. Configuração dos Labels de Overlay (Texto Amarelo/Médico)
+    // 2. Configuração dos Labels de Overlay
     QString overlayStyle = "QLabel { color: #f1c40f; font-weight: bold; font-size: 14px; background: transparent; }";
 
-    //3. Barra de Ferramentas e Botões
     // Canto Superior Esquerdo (Info Paciente)
     QLabel *lblTopLeft = new QLabel("");
     lblTopLeft->setStyleSheet(overlayStyle);
-    lblTopLeft->setAttribute(Qt::WA_TransparentForMouseEvents); // Permite clicar na imagem "através" do texto
+    lblTopLeft->setAttribute(Qt::WA_TransparentForMouseEvents); 
     overlayLayout->addWidget(lblTopLeft, 0, 0, Qt::AlignTop | Qt::AlignLeft);
 
     // Canto Superior Direito (Info Instituição/Data)
     QLabel *lblTopRight = new QLabel("");
     lblTopRight->setStyleSheet(overlayStyle);
-    lblTopRight->setAlignment(Qt::AlignRight);
+    lblTopRight->setAlignment(Qt::AlignRight); // Garante alinhamento à direita
     lblTopRight->setAttribute(Qt::WA_TransparentForMouseEvents);
     overlayLayout->addWidget(lblTopRight, 0, 1, Qt::AlignTop | Qt::AlignRight);
 
     // Canto Inferior Direito (Info Técnica)
     QLabel *lblBottomRight = new QLabel("");
     lblBottomRight->setStyleSheet(overlayStyle);
-    lblBottomRight->setAlignment(Qt::AlignRight);
+    lblBottomRight->setAlignment(Qt::AlignRight); // Garante alinhamento à direita
     lblBottomRight->setAttribute(Qt::WA_TransparentForMouseEvents);
     overlayLayout->addWidget(lblBottomRight, 2, 1, Qt::AlignBottom | Qt::AlignRight);
     
@@ -276,7 +285,7 @@ int main(int argc, char *argv[]) {
             }
         }
     };
-    
+
     // Conexões dos Botões
     QObject::connect(btnBigOpen, &QPushButton::clicked, openDicomAction);
     QObject::connect(btnOpenAnother, &QPushButton::clicked, openDicomAction);
