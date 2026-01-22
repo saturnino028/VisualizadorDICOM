@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
     QWidget *viewContainer = new QWidget;
     
     QGridLayout *overlayLayout = new QGridLayout(viewContainer);
-    
+
     int m = 10; // Margem interna para o texto não colar na borda da tela
     overlayLayout->setContentsMargins(m, m, m, m); // Margem interna para o texto não colar na borda da tela
 
@@ -193,6 +193,10 @@ int main(int argc, char *argv[]) {
     QPushButton *btnZoomOut = new QPushButton("Zoom (-)");
     QPushButton *btnFit = new QPushButton("Resetar");
     QPushButton *btnBack = new QPushButton("Voltar ao Início");
+    QPushButton *btnToggleInfo = new QPushButton("Dados (On)");
+
+    btnToggleInfo->setCheckable(true); // Transforma em botão de ligar/desligar
+    btnToggleInfo->setChecked(true);   // Começa ligado (texto visível)
 
     // Estilização dos botões da barra
     QString toolBtnStyle = "padding: 8px 15px; font-weight: bold; border-radius: 4px; background-color: #ecf0f1;";
@@ -200,10 +204,13 @@ int main(int argc, char *argv[]) {
     btnZoomIn->setStyleSheet(toolBtnStyle);
     btnZoomOut->setStyleSheet(toolBtnStyle);
     btnFit->setStyleSheet(toolBtnStyle);
+    btnToggleInfo->setStyleSheet(toolBtnStyle);
     btnBack->setStyleSheet("padding: 8px 15px; color: white; background-color: #e74c3c; border-radius: 4px;");
+    
 
     toolsLayout->addWidget(btnOpenAnother);
     toolsLayout->addStretch(); // Espaçador
+    toolsLayout->addWidget(btnToggleInfo);
     toolsLayout->addWidget(btnZoomIn);
     toolsLayout->addWidget(btnZoomOut);
     toolsLayout->addWidget(btnFit);
@@ -299,6 +306,24 @@ int main(int argc, char *argv[]) {
         view->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio); 
     });
     
+    // Mostrar/esconder texto
+    QObject::connect(btnToggleInfo, &QPushButton::toggled, 
+        [btnToggleInfo, lblTopLeft, lblTopRight, lblBottomRight](bool checked) {
+            
+            // Define a visibilidade baseada no estado do botão
+            lblTopLeft->setVisible(checked);
+            lblTopRight->setVisible(checked);
+            lblBottomRight->setVisible(checked);
+
+            // Muda o texto do botão para dar feedback ao usuário
+            if (checked) {
+                btnToggleInfo->setText("Dados (On)");
+            } else {
+                btnToggleInfo->setText("Dados (Off)");
+            }
+        }
+    );
+
     // Voltar para a Home
     QObject::connect(btnBack, &QPushButton::clicked, [stackedWidget, scene]() {
         scene->clear(); // Libera memória da imagem atual
@@ -327,6 +352,12 @@ int main(int argc, char *argv[]) {
     QObject::connect(shortcutReset, &QShortcut::activated, [scene, view]() {
         view->fitInView(scene->itemsBoundingRect(), Qt::KeepAspectRatio);
         view->centerOn(0,0); // Centraliza a imagem após o reset
+    });
+
+    // 5. Atalho para Info (Ctrl + I)
+    QShortcut *shortcutInfo = new QShortcut(QKeySequence("Ctrl+I"), &window);
+    QObject::connect(shortcutInfo, &QShortcut::activated, [btnToggleInfo]() {
+        btnToggleInfo->toggle(); 
     });
 
     window.show();
