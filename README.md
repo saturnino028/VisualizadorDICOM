@@ -99,36 +99,13 @@ Este roadmap apresenta as funcionalidades planejadas para as próximas versões 
 ---
 
 ### 🔹 Versão 1.1 – Interface do Usuário (UI/UX)
-
-* [ ] **Redesign da interface principal**
-  * Layout mais profissional e alinhado a visualizadores médicos comerciais
-  * Melhor organização dos painéis e menus
-  * Correção de bugs
-     
-* [ ] **Atalhos de teclado**
-
-  * Zoom (`Ctrl + / Ctrl -`)
-  * Reset de visualização
-  * Abertura rápida de arquivos (`Ctrl + O`)
-* [ ] **Feedback visual aprimorado**
-
-  * Indicadores de carregamento
-
----
+* [x] Redesign da interface principal
+* [x] Atalhos de teclado
+* [x] Feedback visual aprimorado
 
 ### 🔹 Versão 1.2 – Visualização de Metadados DICOM
+* [x] Exibição de informações essenciais
 
-* [ ] **Exibição de informações essenciais**
-
-  * Nome do paciente
-  * Modalidade
-  * Data do exame
-  * Resolução da imagem
-  * Window Level / Window Width
-    
-* [ ] **Exportação de imagem**
-
-  * PNG / JPEG com janelamento aplicado
 
 ---
 

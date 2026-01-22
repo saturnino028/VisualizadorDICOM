@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 
     // Configuração da Janela Principal
     QMainWindow window;
-    window.setWindowTitle("Saturnino.eng View - Versão 1.0.1");
+    window.setWindowTitle("Saturnino.eng View - Versão 1.2.0");
     
     // 1. Pega a tela onde o mouse/app está (Tela Primária)
     QScreen *screen = QGuiApplication::primaryScreen();
